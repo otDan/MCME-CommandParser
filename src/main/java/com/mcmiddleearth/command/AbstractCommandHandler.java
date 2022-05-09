@@ -10,10 +10,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestion;
 import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.LiteralCommandNode;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -51,22 +47,21 @@ public abstract class AbstractCommandHandler {
             String message = String.format("%s %s", command, Joiner.on(' ').join(args)).trim();
             ParseResults<McmeCommandSender> result = commandDispatcher.parse(message, sender);
             result.getExceptions().entrySet().stream()
-                    .findFirst().ifPresent(error -> sender.sendMessage(new ComponentBuilder(error.getValue().getMessage())
-                    .color(Style.ERROR).create()));
+                    .findFirst().ifPresent(error -> sender.sendMessage(error.getValue().getMessage()));
             if(result.getExceptions().isEmpty()) {
                 if(result.getContext().getNodes().size() > 0
                         && (result.getContext().getCommand()==null
                             || result.getContext().getRange().getEnd() < result.getReader().getString().length())) {
                     //check for possible child nodes to collect suggestions and bake better error message
-                    ComponentBuilder helpMessage;
+                    StringBuilder helpMessage;
                     boolean help = false;
                     String parsedCommand = "/" + result.getReader().getString()
                             .substring(0, result.getContext().getRange().getEnd());
                     if(result.getReader().getRemaining().trim().equals("help")){
-                        helpMessage = new ComponentBuilder("Help for command "+parsedCommand+":").color(Style.INFO);
+                        helpMessage = new StringBuilder("Help for command " + parsedCommand + ":");
                         help = true;
                     } else {
-                        helpMessage = new ComponentBuilder("Invalid command syntax.").color(Style.ERROR);
+                        helpMessage = new StringBuilder("Invalid command syntax.");
                     }
                     CommandNode<McmeCommandSender> parsedNode = result.getContext().getNodes().get(result.getContext().getNodes().size() - 1).getNode();
                     Collection<CommandNode<McmeCommandSender>> children = (result.getContext().getNodes().isEmpty()?new ArrayList<>():parsedNode.getChildren()
@@ -76,7 +71,7 @@ public abstract class AbstractCommandHandler {
                         if (result.getContext().getCommand() == null) {
                             helpMessage.append(" Maybe you don't have permission.");
                         } else if(!help) {
-                            helpMessage.append(" Maybe you want to do:\n").append(parsedCommand).color(Style.INFO);
+                            helpMessage.append(" Maybe you want to do:\n").append(parsedCommand);
                         }
                     } else {
                         if(!help) {
@@ -84,65 +79,64 @@ public abstract class AbstractCommandHandler {
                         }
                         for(Map.Entry<CommandNode<McmeCommandSender>,String> entry: use.entrySet()) {
                             String usageMessage = "";
-                            helpMessage.append("\n").color(Style.INFO);
+                            helpMessage.append("\n");
                             String[] visitedNodes = parsedCommand.split(" ");
                             Iterator<ParsedCommandNode<McmeCommandSender>> iterator = result.getContext().getNodes().listIterator();
                             for (String visitedNode : visitedNodes) {
-                                helpMessage.append(" "+visitedNode);
+                                helpMessage.append(" ").append(visitedNode);
                                 ParsedCommandNode<McmeCommandSender> node = iterator.next();
-                                helpMessage.color((node.getNode() instanceof LiteralCommandNode?Style.LITERAL:Style.ARGUMENT));
+//                                helpMessage.color((node.getNode() instanceof LiteralCommandNode?Style.LITERAL:Style.ARGUMENT));
                                 if ((node.getNode() instanceof HelpfulNode)) {
-                                    helpMessage.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                            new Text(new ComponentBuilder(((HelpfulNode) node.getNode()).getTooltip())
-                                                    .color(Style.TOOLTIP).create())));
+//                                    helpMessage.toString().event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+//                                            new Text(new ComponentBuilder(((HelpfulNode) node.getNode()).getTooltip())
+//                                                    .color(Style.TOOLTIP).create())));
                                     if(!((HelpfulNode) node.getNode()).getHelpText().equals("")) {
                                         usageMessage = ((HelpfulNode) node.getNode()).getHelpText();
                                     }
                                 } else {
-                                    helpMessage.event((HoverEvent)null);
+//                                    helpMessage.toString().event((HoverEvent)null);
                                 }
                             }
                             String[] possibleNodes = entry.getValue().replace('|', ' ').split(" ");
                             CommandNode<McmeCommandSender> node = parsedNode;
                             CommandNode<McmeCommandSender> lastNode = parsedNode;
-                            for(String possibleNode: possibleNodes) {
-                                helpMessage.append(" "+possibleNode);
+                            for(String possibleNode : possibleNodes) {
+                                helpMessage.append(" ").append(possibleNode);
                                 CommandNode<McmeCommandSender> temp = node;
                                 node = findDirectChild(node, possibleNode.replaceAll("[()\\[\\]<>]",""));
-                                if(node==null) {
+                                if(node == null) {
                                     node = findDirectChild(lastNode, possibleNode.replaceAll("[()\\[\\]<>]",""));
                                 } else {
                                     lastNode = temp;
                                 }
-                                helpMessage.color((node instanceof LiteralCommandNode?Style.LITERAL:Style.ARGUMENT));
+//                                helpMessage.toString().color((node instanceof LiteralCommandNode?Style.LITERAL:Style.ARGUMENT));
                                 if ((node instanceof HelpfulNode)) {
-                                    helpMessage.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                            new Text(new ComponentBuilder(((HelpfulNode) node).getTooltip())
-                                                    .color(Style.TOOLTIP).create())));
+//                                    helpMessage.toString().event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+//                                            new Text(new ComponentBuilder(((HelpfulNode) node).getTooltip())
+//                                                    .color(Style.TOOLTIP).create())));
                                     if(!((HelpfulNode) node).getHelpText().equals("")) {
                                         usageMessage = ((HelpfulNode) node).getHelpText();
                                     }
                                 } else {
-                                    helpMessage.event((HoverEvent) null);
+//                                    helpMessage.toString().event((HoverEvent) null);
                                 }
                             }
                             if(!usageMessage.equals("")) {
-                                helpMessage.append(" : "+usageMessage).color(Style.HELP)
-                                           .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,new Text(new ComponentBuilder().create())));
+                                helpMessage.append(" : ").append(usageMessage);
+//                                        .color(Style.HELP)
+//                                           .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,new Text(new ComponentBuilder().create())));
                             }
                         }
                     }
-                    sender.sendMessage(helpMessage.create());
+                    sender.sendMessage(helpMessage.toString());
                 } else if(result.getContext().getCommand() == null) {
-                    sender.sendMessage(new ComponentBuilder("Invalid command. Maybe you don't have permission.")
-                            .color(ChatColor.RED).create());
+                    sender.sendMessage("Invalid command. Maybe you don't have permission.");
                 } else {
                     commandDispatcher.execute(result);
                 }
             }
         } catch (CommandSyntaxException e) {
-            sender.sendMessage(new ComponentBuilder("Internal command parser exception!")
-                    .color(ChatColor.RED).create());
+            sender.sendMessage("Internal command parser exception!");
         }
     }
 
@@ -160,7 +154,7 @@ public abstract class AbstractCommandHandler {
                 request.getSuggestions().addAll(completionSuggestions.stream().map(Suggestion::getText).collect(Collectors.toList()));
             }
         } catch (InterruptedException | ExecutionException e) {
-            request.getSender().sendMessage(new ComponentBuilder("Command tab complete error."+e).color(Style.ERROR).create());
+            request.getSender().sendMessage("Command tab complete error." + e);
         }
     }
 

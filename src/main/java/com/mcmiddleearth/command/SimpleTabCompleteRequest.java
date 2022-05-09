@@ -1,8 +1,5 @@
 package com.mcmiddleearth.command;
 
-import com.mcmiddleearth.command.McmeCommandSender;
-import com.mcmiddleearth.command.TabCompleteRequest;
-
 import java.util.ArrayList;
 import java.util.List;
 
